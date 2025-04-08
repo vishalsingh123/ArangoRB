@@ -6,26 +6,55 @@ module Arango
     include Arango::Helper_Return
     include Arango::Collection_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
-      collection = hash[:collection]
-      if collection.is_a?(Arango::Collection) && collection.database.server.active_cache && !hash[:id].nil?
-        cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:id]}"
-        cached = collection.database.server.cache.cache.dig(:index, cache_name)
-        if cached.nil?
-          hash[:cache_name] = cache_name
-          return super
-        else
-          body = hash[:body] || {}
-          [:type, :sparse, :unique, :fields, :deduplicate, :geoJson,
-            :minLength].each{|k| body[k] ||= hash[k]}
-          cached.assign_attributes(body)
-          return cached
-        end
-      end
-      super
-    end
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      collection = hash[:collection]
+#      if collection.is_a?(Arango::Collection) && collection.database.server.active_cache && !hash[:id].nil?
+#        cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:id]}"
+#        cached = collection.database.server.cache.cache.dig(:index, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = hash[:body] || {}
+#          [:type, :sparse, :unique, :fields, :deduplicate, :geoJson,
+#            :minLength].each{|k| body[k] ||= hash[k]}
+#          cached.assign_attributes(body)
+#          return cached
+#        end
+#      end
+#      super
+#    end
+		def self.new(hash)
+			unless hash.is_a?(Hash)
+				return super
+			end
+
+			collection = hash[:collection]
+			if collection.is_a?(Arango::Collection) &&
+				 collection.database.server.active_cache &&
+				 !hash[:id].nil?
+
+				cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:id]}"
+				cached = collection.database.server.cache.cache.dig(:index, cache_name)
+
+				if cached.nil?
+					hash[:cache_name] = cache_name
+					return super(hash)
+				else
+					body = hash[:body] || {}
+					[:type, :sparse, :unique, :fields, :deduplicate, :geoJson, :minLength].each do |k|
+						body[k] ||= hash[k]
+					end
+					cached.assign_attributes(body)
+					return cached
+				end
+			end
+
+			super(hash)
+		end
+
 
     def initialize(collection:, body: {}, id: nil, type: "hash", unique: nil,
       fields:, sparse: nil, geoJson: nil, minLength: nil, deduplicate: nil,

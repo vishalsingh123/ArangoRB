@@ -6,21 +6,42 @@ module Arango
     include Arango::Helper_Return
     include Arango::Server_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      server = hash[:server]
+#      if server.is_a?(Arango::Server) && server.active_cache
+#        cache_name = hash[:name]
+#        cached = server.cache.cache.dig(:database, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          return cached
+#        end
+#      end
+#      super
+#    end
+    def self.new(*args, **kwargs)
+      hash = args[0] || kwargs
+      unless hash.is_a?(Hash)
+        return super(*args, **kwargs)
+      end
+
       server = hash[:server]
+
       if server.is_a?(Arango::Server) && server.active_cache
         cache_name = hash[:name]
         cached = server.cache.cache.dig(:database, cache_name)
         if cached.nil?
           hash[:cache_name] = cache_name
-          return super
+          return super(**hash)
         else
           return cached
         end
       end
-      super
+
+      super(**hash)
     end
 
     def initialize(name:, server:, cache_name: nil)

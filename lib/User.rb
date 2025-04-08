@@ -6,25 +6,50 @@ module Arango
     include Arango::Helper_Return
     include Arango::Server_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
-      database = hash[:database]
-      if database.is_a?(Arango::Database) && database.server.active_cache
-        cache_name = hash[:name]
-        cached = database.server.cache.cache.dig(:user, cache_name)
-        if cached.nil?
-          hash[:cache_name] = cache_name
-          return super
-        else
-          body = {}
-          [:password, :extra, :active].each{|k| body[k] ||= hash[k]}
-          cached.assign_attributes(body)
-          return cached
-        end
-      end
-      super
-    end
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      database = hash[:database]
+#      if database.is_a?(Arango::Database) && database.server.active_cache
+#        cache_name = hash[:name]
+#        cached = database.server.cache.cache.dig(:user, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = {}
+#          [:password, :extra, :active].each{|k| body[k] ||= hash[k]}
+#          cached.assign_attributes(body)
+#          return cached
+#        end
+#      end
+#      super
+#    end
+	
+		def self.new(hash)
+			unless hash.is_a?(Hash)
+				return super
+			end
+
+			database = hash[:database]
+			if database.is_a?(Arango::Database) && database.server.active_cache
+				cache_name = hash[:name]
+				cached = database.server.cache.cache.dig(:user, cache_name)
+
+				if cached.nil?
+					hash[:cache_name] = cache_name
+					return super(hash)
+				else
+					body = {}
+					[:password, :extra, :active].each { |k| body[k] ||= hash[k] }
+					cached.assign_attributes(body)
+					return cached
+				end
+			end
+
+			super(hash)
+		end
+
 
     def initialize(server:, password: "", name:, extra: {}, active: nil, cache_name: nil)
       assign_server(server)

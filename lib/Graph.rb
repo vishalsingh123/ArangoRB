@@ -6,26 +6,54 @@ module Arango
     include Arango::Helper_Return
     include Arango::Database_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
-      database = hash[:database]
-      if database.is_a?(Arango::Database) && database.server.active_cache
-        cache_name = "#{database.name}/#{hash[:name]}"
-        cached = database.server.cache.cache.dig(:graph, cache_name)
-        if cached.nil?
-          hash[:cache_name] = cache_name
-          return super
-        else
-          body = hash[:body] || {}
-          [:isSmart, :edgeDefinitions, :orphanCollections, :numberOfShards,
-            :replicationFactor, :smartGraphAttribute].each{|k| body[k] ||= hash[k]}
-          cached.assign_attributes(body)
-          return cached
-        end
-      end
-      super
-    end
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      database = hash[:database]
+#      if database.is_a?(Arango::Database) && database.server.active_cache
+#        cache_name = "#{database.name}/#{hash[:name]}"
+#        cached = database.server.cache.cache.dig(:graph, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = hash[:body] || {}
+#          [:isSmart, :edgeDefinitions, :orphanCollections, :numberOfShards,
+#            :replicationFactor, :smartGraphAttribute].each{|k| body[k] ||= hash[k]}
+#          cached.assign_attributes(body)
+#          return cached
+#        end
+#      end
+#      super
+#    end
+		def self.new(hash)
+			unless hash.is_a?(Hash)
+				return super
+			end
+
+			database = hash[:database]
+			if database.is_a?(Arango::Database) && database.server.active_cache
+				cache_name = "#{database.name}/#{hash[:name]}"
+				cached = database.server.cache.cache.dig(:graph, cache_name)
+
+				if cached.nil?
+					hash[:cache_name] = cache_name
+					return super(hash)
+				else
+					body = hash[:body] || {}
+					[
+						:isSmart, :edgeDefinitions, :orphanCollections,
+						:numberOfShards, :replicationFactor, :smartGraphAttribute
+					].each { |k| body[k] ||= hash[k] }
+					
+					cached.assign_attributes(body)
+					return cached
+				end
+			end
+
+			super(hash)
+		end
+
 
     def initialize(name:, database:, edgeDefinitions: [],
       orphanCollections: [], body: {}, numberOfShards: nil, isSmart: nil,

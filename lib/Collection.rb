@@ -6,24 +6,49 @@ module Arango
     include Arango::Helper_Return
     include Arango::Database_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      database = hash[:database]
+#      if database.is_a?(Arango::Database) && database.server.active_cache
+#        cache_name = "#{database.name}/#{hash[:name]}"
+#        cached = database.server.cache.cache.dig(:database, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = hash[:body] || {}
+#          [:type, :isSystem].each{|k| body[k] ||= hash[k]}
+#          cached.assign_attributes(body)
+#          return cached
+#        end
+#      end
+#      super
+#    end
+
+		def self.new(*args, **kwargs)
+      hash = args[0] || kwargs
+      unless hash.is_a?(Hash)
+        return super(*args, **kwargs)
+      end
+
       database = hash[:database]
       if database.is_a?(Arango::Database) && database.server.active_cache
         cache_name = "#{database.name}/#{hash[:name]}"
         cached = database.server.cache.cache.dig(:database, cache_name)
+
         if cached.nil?
           hash[:cache_name] = cache_name
-          return super
+          return super(**hash)
         else
           body = hash[:body] || {}
-          [:type, :isSystem].each{|k| body[k] ||= hash[k]}
+          [:type, :isSystem].each { |k| body[k] ||= hash[k] }
           cached.assign_attributes(body)
           return cached
         end
       end
-      super
+
+      super(**hash)
     end
 
     def initialize(name:, database:, graph: nil, body: {}, type: :document,

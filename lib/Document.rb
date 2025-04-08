@@ -6,27 +6,57 @@ module Arango
     include Arango::Helper_Return
     include Arango::Collection_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
-      collection = hash[:collection]
-      if collection.is_a?(Arango::Collection) &&
-        collection.database.server.active_cache && !hash[:name].nil?
-        cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:name]}"
-        cached = collection.database.server.cache.cache.dig(:document, cache_name)
-        if cached.nil?
-          hash[:cache_name] = cache_name
-          return super
-        else
-          body = hash[:body] || {}
-          [:rev, :from, :to].each{|k| body[:"_#{k}"] ||= hash[k]}
-          body[:"_key"] ||= hash[:name]
-          cached.assign_attributes(body)
-          return cached
-        end
-      end
-      super
-    end
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      collection = hash[:collection]
+#      if collection.is_a?(Arango::Collection) &&
+#        collection.database.server.active_cache && !hash[:name].nil?
+#        cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:name]}"
+#        cached = collection.database.server.cache.cache.dig(:document, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = hash[:body] || {}
+#          [:rev, :from, :to].each{|k| body[:"_#{k}"] ||= hash[k]}
+#          body[:"_key"] ||= hash[:name]
+#          cached.assign_attributes(body)
+#          return cached
+#        end
+#      end
+#      super
+#    end
+
+		def self.new(hash)
+			unless hash.is_a?(Hash)
+				return super
+			end
+
+			collection = hash[:collection]
+
+			if collection.is_a?(Arango::Collection) &&
+				 collection.database.server.active_cache &&
+				 hash[:name]
+				
+				cache_name = "#{collection.database.name}/#{collection.name}/#{hash[:name]}"
+				cached = collection.database.server.cache.cache.dig(:document, cache_name)
+
+				if cached.nil?
+					hash[:cache_name] = cache_name
+					return super(**hash)
+				else
+					body = hash[:body] || {}
+					[:rev, :from, :to].each { |k| body[:"_#{k}"] ||= hash[k] }
+					body[:"_key"] ||= hash[:name]
+					cached.assign_attributes(body)
+					return cached
+				end
+			end
+
+			super(**hash)
+		end
+
 
     def initialize(name: nil, collection:, body: {}, rev: nil, from: nil,
       to: nil, cache_name: nil)

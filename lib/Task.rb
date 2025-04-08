@@ -6,24 +6,49 @@ module Arango
     include Arango::Helper_Return
     include Arango::Database_Return
 
-    def self.new(*args)
-      hash = args[0]
-      super unless hash.is_a?(Hash)
-      database = hash[:database]
-      if database.is_a?(Arango::Database) && database.server.active_cache && !hash[:id].nil?
-        cache_name = "#{database.name}/#{hash[:id]}"
-        cached = database.server.cache.cache.dig(:task, cache_name)
-        if cached.nil?
-          hash[:cache_name] = cache_name
-          return super
-        else
-          body = hash[:body] || {}
-          [:name, :type, :period, :command, :params, :created].each{|k| body[k] ||= hash[k]}
-          cached.assign_attributes(body)
-        end
-      end
-      super
-    end
+#    def self.new(*args)
+#      hash = args[0]
+#      super unless hash.is_a?(Hash)
+#      database = hash[:database]
+#      if database.is_a?(Arango::Database) && database.server.active_cache && !hash[:id].nil?
+#        cache_name = "#{database.name}/#{hash[:id]}"
+#        cached = database.server.cache.cache.dig(:task, cache_name)
+#        if cached.nil?
+#          hash[:cache_name] = cache_name
+#          return super
+#        else
+#          body = hash[:body] || {}
+#          [:name, :type, :period, :command, :params, :created].each{|k| body[k] ||= hash[k]}
+#          cached.assign_attributes(body)
+#        end
+#      end
+#      super
+#    end
+
+		def self.new(hash)
+			unless hash.is_a?(Hash)
+				return super
+			end
+
+			database = hash[:database]
+			if database.is_a?(Arango::Database) && database.server.active_cache && !hash[:id].nil?
+				cache_name = "#{database.name}/#{hash[:id]}"
+				cached = database.server.cache.cache.dig(:task, cache_name)
+
+				if cached.nil?
+					hash[:cache_name] = cache_name
+					return super(hash)
+				else
+					body = hash[:body] || {}
+					[:name, :type, :period, :command, :params, :created].each { |k| body[k] ||= hash[k] }
+					cached.assign_attributes(body)
+					return cached
+				end
+			end
+
+			super(hash)
+		end
+
 
     def initialize(id: nil, name: nil, type: nil, period: nil, command: nil,
       params: nil, created: nil, body: {}, database:, cache_name: nil)

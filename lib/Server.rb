@@ -154,13 +154,21 @@ module Arango
 
 # === REQUESTS ===
 
-    def request(*args)
-      if @pool
-        @internal_request.with{|request| request.request(*args)}
-      else
-        @request.request(*args)
-      end
-    end
+#    def request(*args)
+#      if @pool
+#        @internal_request.with{|request| request.request(*args)}
+#      else
+#        @request.request(*args)
+#      end
+#    end
+
+		def request(action, url, **kwargs)
+			if @pool
+				@internal_request.with { |request| request.request(action, url, **kwargs) }
+			else
+				@request.request(action, url, **kwargs)
+			end
+		end
 
     def download(*args)
       if @pool
